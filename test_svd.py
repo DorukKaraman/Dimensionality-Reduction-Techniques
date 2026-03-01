@@ -1,5 +1,5 @@
 import numpy as np
-from svd import TruncatedSVD, compress_image
+from svd import TruncatedSVD, PCA, compress_image
 from metrics import reconstruction_error, relative_error, psnr
 
 
@@ -113,6 +113,60 @@ def test_metrics():
     assert psnr(A, B) > 0
 
 
+# PCA Tests
+
+def test_pca_centering():
+    # PCA should center data (mean subtracted)
+    X = np.random.randn(100, 20) + 5  # Non-zero mean
+    pca = PCA(n_components=10)
+    pca.fit(X)
+    
+    assert np.allclose(pca.mean_, np.mean(X, axis=0))
+
+
+def test_pca_transform_inverse():
+    # Inverse transform should recover original (with enough components)
+    X = np.random.randn(50, 20)
+    pca = PCA(n_components=20)  # All components
+    pca.fit(X)
+    
+    X_reduced = pca.transform(X)
+    X_recovered = pca.inverse_transform(X_reduced)
+    
+    # Should be exact with all components
+    assert np.allclose(X, X_recovered, atol=1e-10)
+
+
+def test_pca_explained_variance():
+    X = np.random.randn(100, 30)
+    pca = PCA(n_components=10)
+    pca.fit(X)
+    
+    # Variance should be positive and in descending order
+    assert np.all(pca.explained_variance_ > 0)
+    assert np.all(np.diff(pca.explained_variance_) <= 0)
+    assert pca.explained_variance_ratio_.sum() <= 1.0
+
+
+def test_pca_components_orthonormal():
+    X = np.random.randn(100, 50)
+    pca = PCA(n_components=20)
+    pca.fit(X)
+    
+    # Components should be orthonormal
+    VVt = pca.components_ @ pca.components_.T
+    assert np.allclose(VVt, np.eye(20), atol=1e-10)
+
+
+def test_pca_none_components():
+    # n_components=None should keep all
+    X = np.random.randn(50, 30)
+    pca = PCA(n_components=None)
+    pca.fit(X)
+    
+    assert pca.n_components_ == 30
+
+
 if __name__ == "__main__":
     test_reconstruction_shape()
     test_orthogonality()
@@ -124,4 +178,9 @@ if __name__ == "__main__":
     test_invalid_n_components()
     test_unfitted_raises()
     test_metrics()
+    test_pca_centering()
+    test_pca_transform_inverse()
+    test_pca_explained_variance()
+    test_pca_components_orthonormal()
+    test_pca_none_components()
     print("All tests passed!")

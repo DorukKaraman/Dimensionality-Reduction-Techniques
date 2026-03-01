@@ -68,6 +68,69 @@ class TruncatedSVD:
             raise RuntimeError("Model not fitted. Call fit() first.")
 
 
+class PCA:
+    # n_components : int or None
+    
+    def __init__(self, n_components=None):
+        self.n_components = n_components
+        self.components_ = None          # Principal axes (Vt)
+        self.mean_ = None                # Feature means
+        self.explained_variance_ = None  # Variance per component
+        self.explained_variance_ratio_ = None
+        self.n_components_ = None        # Actual number retained
+    
+    def fit(self, X):
+        # Fit PCA on dataset X (n_samples, n_features)
+        X = np.asarray(X, dtype=np.float64)
+        n_samples, n_features = X.shape
+        
+        # Center the data
+        self.mean_ = np.mean(X, axis=0)
+        X_centered = X - self.mean_
+        
+        # SVD of centered data
+        U, s, Vt = np.linalg.svd(X_centered, full_matrices=False)
+        
+        # Determine number of components
+        max_k = min(n_samples, n_features)
+        if self.n_components is None:
+            k = max_k
+        else:
+            if self.n_components > max_k:
+                raise ValueError(f"n_components={self.n_components} > max={max_k}")
+            k = self.n_components
+        
+        self.n_components_ = k
+        self.components_ = Vt[:k, :]
+        
+        # Explained variance (eigenvalues of covariance matrix)
+        self.explained_variance_ = (s[:k] ** 2) / (n_samples - 1)
+        total_var = np.sum(s ** 2) / (n_samples - 1)
+        self.explained_variance_ratio_ = self.explained_variance_ / total_var
+        
+        return self
+    
+    def transform(self, X):
+        # Project X onto principal components
+        self._check_fitted()
+        X = np.asarray(X, dtype=np.float64)
+        return (X - self.mean_) @ self.components_.T
+    
+    def inverse_transform(self, X_transformed):
+        # Reconstruct from reduced representation
+        self._check_fitted()
+        return X_transformed @ self.components_ + self.mean_
+    
+    def fit_transform(self, X):
+        # Fit and transform in one step
+        self.fit(X)
+        return self.transform(X)
+    
+    def _check_fitted(self):
+        if self.components_ is None:
+            raise RuntimeError("Model not fitted. Call fit() first.")
+
+
 def compress_image(image, k):
     # Compress grayscale image using rank-k SVD approximation
     svd = TruncatedSVD(n_components=k)
