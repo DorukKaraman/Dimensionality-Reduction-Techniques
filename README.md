@@ -1,6 +1,6 @@
 # Dimensionality Reduction Techniques for Images
 
-SVD-based image compression demonstrating the Eckart-Young-Mirsky theorem.
+SVD and PCA implementations for image compression and dimensionality reduction.
 
 ## Quick Start
 
@@ -12,18 +12,25 @@ python test_svd.py
 ## Demo
 
 ```bash
+# SVD compression on single image
 python visualize_compression.py
+
+# PCA on synthetic face dataset  
+python visualize_pca.py
 ```
 
-Generates a visualization comparing the original image with compressed versions at different ranks (5, 20, 50, 100), showing PSNR and relative error for each.
+**visualize_compression.py** - Shows SVD compression at different ranks with PSNR/error metrics.
+
+**visualize_pca.py** - Demonstrates PCA on a dataset of synthetic faces, showing principal components and reconstructions.
 
 ## Project Structure
 
 ```
-├── svd.py                    # TruncatedSVD class with sklearn-style API
+├── svd.py                    # TruncatedSVD and PCA classes
 ├── metrics.py                # Reconstruction error, PSNR metrics
-├── visualize_compression.py  # Demo visualization script
-├── test_svd.py               # Unit tests
+├── visualize_compression.py  # SVD demo on single image
+├── visualize_pca.py          # PCA demo on synthetic faces
+├── test_svd.py               # Unit tests (15 tests)
 ├── requirements.txt
 └── README.md
 ```
@@ -31,24 +38,24 @@ Generates a visualization comparing the original image with compressed versions 
 ## Usage
 
 ```python
-from svd import TruncatedSVD, compress_image
-from metrics import reconstruction_error, psnr
+from svd import TruncatedSVD, PCA, compress_image
+from metrics import psnr, relative_error
 import numpy as np
 
-# Simple API
-image = ...  # grayscale image (H, W)
+# SVD: Compress a single image
+image = np.random.rand(256, 256) * 255
 compressed = compress_image(image, k=50)
+print(f"PSNR: {psnr(image, compressed):.1f} dB")
 
-# sklearn-style API
-svd = TruncatedSVD(n_components=50)
-svd.fit(image)
-print(f"Explained variance: {svd.explained_variance_ratio_.sum():.2%}")
+# PCA: Reduce dimensionality of a dataset
+# X shape: (n_samples, n_features) - each row is a flattened image
+X = np.random.randn(100, 1024)  # 100 images, 32x32 pixels
 
-reduced = svd.transform(image)      # Project to reduced space
-reconstructed = svd.inverse_transform(reduced)
+pca = PCA(n_components=50)
+X_reduced = pca.fit_transform(X)
+print(f"Variance retained: {pca.explained_variance_ratio_.sum():.2%}")
 
-# Quality metrics
-print(f"PSNR: {psnr(image, reconstructed):.1f} dB")
+X_reconstructed = pca.inverse_transform(X_reduced)
 ```
 
 ## API Reference
@@ -64,6 +71,17 @@ print(f"PSNR: {psnr(image, reconstructed):.1f} dB")
 | `reconstruct()` | Get rank-k approximation of fitted matrix |
 | `compression_ratio(shape)` | Calculate storage compression ratio |
 
+### PCA
+
+| Method | Description |
+|--------|-------------|
+| `fit(X)` | Fit PCA on dataset X (centers data) |
+| `transform(X)` | Project X onto principal components |
+| `inverse_transform(X_reduced)` | Reconstruct from reduced representation |
+| `fit_transform(X)` | Fit and transform in one step |
+
+**Attributes:** `components_`, `mean_`, `explained_variance_`, `explained_variance_ratio_`
+
 ### Metrics
 
 | Function | Description |
@@ -74,9 +92,10 @@ print(f"PSNR: {psnr(image, reconstructed):.1f} dB")
 
 ## Roadmap
 
-- [ ] Add PCA for face datasets (eigenfaces)
-- [x] sklearn-style API (transform/inverse_transform)
+- [x] TruncatedSVD with sklearn-style API
+- [x] PCA for datasets
 - [x] Reconstruction error metrics
+- [ ] Image utilities
 - [ ] Jupyter notebook examples
 - [ ] Autoencoder comparison
 
