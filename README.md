@@ -1,15 +1,15 @@
 # Dimensionality Reduction Techniques for Images
 
-SVD and PCA implementations for image compression and dimensionality reduction.
+SVD, PCA, and Autoencoder implementations for image compression and dimensionality reduction.
 
 ## Quick Start
 
 ```bash
 pip install -r requirements.txt
-python test_svd.py
+python tests.py
 ```
 
-## Demo
+## Demos
 
 ```bash
 # SVD compression on single image
@@ -17,20 +17,25 @@ python visualize_compression.py
 
 # PCA on synthetic face dataset  
 python visualize_pca.py
+
+# Autoencoder training and learned features
+python visualize_autoencoder.py
+
+# Compare PCA vs Autoencoder
+python compare_methods.py
 ```
-
-**visualize_compression.py** - Shows SVD compression at different ranks with PSNR/error metrics.
-
-**visualize_pca.py** - Demonstrates PCA on a dataset of synthetic faces, showing principal components and reconstructions.
 
 ## Project Structure
 
 ```
-├── svd.py                    # TruncatedSVD and PCA classes
-├── metrics.py                # Reconstruction error, PSNR metrics
-├── visualize_compression.py  # SVD demo on single image
-├── visualize_pca.py          # PCA demo on synthetic faces
-├── test_svd.py               # Unit tests (15 tests)
+├── svd.py                     # TruncatedSVD and PCA classes
+├── autoencoder.py             # Linear Autoencoder (NumPy)
+├── metrics.py                 # Reconstruction error, PSNR metrics
+├── visualize_compression.py   # SVD demo on single image
+├── visualize_pca.py           # PCA demo on synthetic faces
+├── visualize_autoencoder.py   # Autoencoder demo + learned features
+├── compare_methods.py         # PCA vs Autoencoder comparison
+├── tests.py                   # Unit tests (19 tests)
 ├── requirements.txt
 └── README.md
 ```
@@ -39,6 +44,7 @@ python visualize_pca.py
 
 ```python
 from svd import TruncatedSVD, PCA, compress_image
+from autoencoder import LinearAutoencoder
 from metrics import psnr, relative_error
 import numpy as np
 
@@ -56,6 +62,11 @@ X_reduced = pca.fit_transform(X)
 print(f"Variance retained: {pca.explained_variance_ratio_.sum():.2%}")
 
 X_reconstructed = pca.inverse_transform(X_reduced)
+
+# Autoencoder: Neural network approach
+ae = LinearAutoencoder(n_components=50, learning_rate=0.1, n_iterations=500)
+ae.fit(X)
+X_ae = ae.reconstruct(X)
 ```
 
 ## API Reference
@@ -82,6 +93,20 @@ X_reconstructed = pca.inverse_transform(X_reduced)
 
 **Attributes:** `components_`, `mean_`, `explained_variance_`, `explained_variance_ratio_`
 
+### LinearAutoencoder
+
+| Method | Description |
+|--------|-------------|
+| `fit(X, verbose)` | Train autoencoder with gradient descent |
+| `transform(X)` | Encode X to latent space |
+| `inverse_transform(latent)` | Decode from latent space |
+| `fit_transform(X)` | Fit and encode in one step |
+| `reconstruct(X)` | Encode then decode X |
+
+**Parameters:** `n_components`, `learning_rate`, `n_iterations`, `random_state`
+
+**Attributes:** `W_encoder_`, `W_decoder_`, `mean_`, `loss_history_`
+
 ### Metrics
 
 | Function | Description |
@@ -95,9 +120,11 @@ X_reconstructed = pca.inverse_transform(X_reduced)
 - [x] TruncatedSVD with sklearn-style API
 - [x] PCA for datasets
 - [x] Reconstruction error metrics
-- [ ] Image utilities
+- [x] Linear Autoencoder (NumPy)
+- [x] Method comparison visualization
+- [ ] Image utilities for loading, flattening and reshaping
 - [ ] Jupyter notebook examples
-- [ ] Autoencoder comparison
+- [ ] Convolutional Autoencoder (PyTorch)
 
 ## License
 

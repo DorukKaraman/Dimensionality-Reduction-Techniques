@@ -1,5 +1,6 @@
 import numpy as np
 from svd import TruncatedSVD, PCA, compress_image
+from autoencoder import LinearAutoencoder
 from metrics import reconstruction_error, relative_error, psnr
 
 
@@ -167,6 +168,49 @@ def test_pca_none_components():
     assert pca.n_components_ == 30
 
 
+# Autoencoder Tests
+
+def test_autoencoder_shapes():
+    X = np.random.randn(50, 100)
+    ae = LinearAutoencoder(n_components=10, n_iterations=10)
+    ae.fit(X)
+    
+    latent = ae.transform(X)
+    assert latent.shape == (50, 10)
+    
+    reconstructed = ae.inverse_transform(latent)
+    assert reconstructed.shape == (50, 100)
+
+
+def test_autoencoder_reconstruction():
+    # Autoencoder should reduce loss over training
+    X = np.random.randn(100, 50)
+    ae = LinearAutoencoder(n_components=20, learning_rate=0.1, 
+                           n_iterations=200, random_state=42)
+    ae.fit(X)
+    
+    # Loss should decrease
+    assert ae.loss_history_[-1] < ae.loss_history_[0]
+
+
+def test_autoencoder_centering():
+    # Autoencoder should center data
+    X = np.random.randn(50, 30) + 10  # Non-zero mean
+    ae = LinearAutoencoder(n_components=10, n_iterations=10)
+    ae.fit(X)
+    
+    assert np.allclose(ae.mean_, np.mean(X, axis=0))
+
+
+def test_autoencoder_unfitted_raises():
+    ae = LinearAutoencoder(n_components=5)
+    try:
+        ae.transform(np.random.randn(10, 20))
+        assert False, "Should have raised"
+    except RuntimeError:
+        pass
+
+
 if __name__ == "__main__":
     test_reconstruction_shape()
     test_orthogonality()
@@ -183,4 +227,8 @@ if __name__ == "__main__":
     test_pca_explained_variance()
     test_pca_components_orthonormal()
     test_pca_none_components()
+    test_autoencoder_shapes()
+    test_autoencoder_reconstruction()
+    test_autoencoder_centering()
+    test_autoencoder_unfitted_raises()
     print("All tests passed!")
