@@ -1,10 +1,10 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from autoencoder import LinearAutoencoder
+from autoencoder import ConvAutoencoder
 from metrics import psnr, relative_error
 
 
-def create_synthetic_faces(n_samples=50, size=32):
+def create_synthetic_faces(n_samples=100, size=32):
     """
     Create synthetic 'face-like' images with eyes and mouth patterns.
     
@@ -43,43 +43,29 @@ def create_synthetic_faces(n_samples=50, size=32):
     return np.array(images)
 
 
-def images_to_matrix(images):
-    """Flatten images to row vectors."""
-    n_samples = images.shape[0]
-    return images.reshape(n_samples, -1)
-
-
-def matrix_to_images(matrix, image_shape):
-    """Reshape row vectors back to images."""
-    return matrix.reshape(-1, *image_shape)
-
-
 def main():
     # Create dataset
     print("Creating synthetic face dataset...")
-    images = create_synthetic_faces(n_samples=50, size=32)
-    image_shape = images[0].shape
+    images = create_synthetic_faces(n_samples=100, size=32)
+    print(f"Dataset shape: {images.shape} (samples x height x width)")
     
-    # Flatten to matrix
-    X = images_to_matrix(images)
-    print(f"Dataset shape: {X.shape} (samples x pixels)")
-    
-    # Fit Autoencoder
-    n_components = 10
-    ae = LinearAutoencoder(
-        n_components=n_components,
+    # Fit Convolutional Autoencoder
+    print("\nTraining Convolutional Autoencoder...")
+    conv_ae = ConvAutoencoder(
+        n_filters=16,
+        latent_channels=4,
         learning_rate=0.001,
-        n_iterations=2000,
+        n_epochs=100,
+        batch_size=16,
         random_state=42
     )
-    ae.fit(X, verbose=True)
+    conv_ae.fit(images, verbose=True)
     
-    print(f"\nAutoencoder with {n_components} latent dimensions:")
-    print(f"  Final loss: {ae.loss_history_[-1]:.6f}")
+    print(f"\nConv Autoencoder ({conv_ae.n_filters} filters, {conv_ae.latent_channels} latent channels):")
+    print(f"  Final loss: {conv_ae.loss_history_[-1]:.6f}")
     
     # Reconstruct
-    X_reconstructed = ae.reconstruct(X)
-    images_reconstructed = matrix_to_images(X_reconstructed, image_shape)
+    images_reconstructed = conv_ae.reconstruct(images)
     
     # Calculate average metrics
     psnr_vals = [psnr(images[i], images_reconstructed[i], max_val=1.0) for i in range(len(images))]
@@ -87,11 +73,11 @@ def main():
     
     # --- Visualization 1: Reconstructions ---
     fig, axes = plt.subplots(2, 5, figsize=(12, 5))
-    fig.suptitle(f"Autoencoder Reconstruction ({n_components} latent dimensions)", 
+    fig.suptitle(f"Conv Autoencoder Reconstruction ({conv_ae.n_filters} filters, {conv_ae.latent_channels} latent ch.)", 
                  fontsize=12, fontweight='bold')
     
     # Show 5 samples: original (top row) vs reconstructed (bottom row)
-    sample_indices = [0, 10, 20, 30, 40]
+    sample_indices = [0, 20, 40, 60, 80]
     
     for i, idx in enumerate(sample_indices):
         # Original
@@ -111,25 +97,25 @@ def main():
     axes[1, 0].set_ylabel("Reconstructed", fontsize=10, fontweight='bold')
     
     plt.tight_layout()
-    plt.savefig("autoencoder_reconstruction.png", dpi=150)
-    print("\nSaved: autoencoder_reconstruction.png")
+    plt.savefig("conv_ae_reconstruction.png", dpi=150)
+    print("\nSaved: conv_ae_reconstruction.png")
     plt.show()
     
-    # --- Visualization 2: Learned Encoder Weights ---
-    # Each column of W_encoder_ is a learned feature (like eigenfaces)
-    fig2, axes2 = plt.subplots(1, 5, figsize=(12, 2.5))
-    fig2.suptitle("Top 5 Learned Features (Encoder Weights)", fontsize=12, fontweight='bold')
+    # --- Visualization 2: Learned Conv Filters ---
+    filters = conv_ae.get_encoder_filters()  # (n_filters, kH, kW)
+    n_show = min(8, filters.shape[0])
     
-    for i in range(5):
-        # Get i-th column of encoder weights
-        feature = ae.W_encoder_[:, i].reshape(image_shape)
-        axes2[i].imshow(feature, cmap='RdBu_r')
-        axes2[i].set_title(f"Feature {i+1}", fontsize=9)
+    fig2, axes2 = plt.subplots(1, n_show, figsize=(12, 2))
+    fig2.suptitle("Conv Autoencoder - First Layer Filters", fontsize=12, fontweight='bold')
+    
+    for i in range(n_show):
+        axes2[i].imshow(filters[i], cmap='RdBu_r')
+        axes2[i].set_title(f"Filter {i+1}", fontsize=9)
         axes2[i].axis('off')
     
     plt.tight_layout()
-    plt.savefig("autoencoder_features.png", dpi=150)
-    print("Saved: autoencoder_features.png")
+    plt.savefig("conv_ae_filters.png", dpi=150)
+    print("Saved: conv_ae_filters.png")
     plt.show()
 
 

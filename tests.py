@@ -1,6 +1,6 @@
 import numpy as np
 from svd import TruncatedSVD, PCA, compress_image
-from autoencoder import LinearAutoencoder
+from autoencoder import LinearAutoencoder, ConvAutoencoder, TORCH_AVAILABLE
 from metrics import reconstruction_error, relative_error, psnr
 
 
@@ -211,6 +211,68 @@ def test_autoencoder_unfitted_raises():
         pass
 
 
+# Convolutional Autoencoder Tests (PyTorch)
+
+def test_conv_autoencoder_shapes():
+    if not TORCH_AVAILABLE:
+        print("  Skipping (PyTorch not available)")
+        return
+    
+    images = np.random.rand(20, 32, 32).astype(np.float32)
+    conv_ae = ConvAutoencoder(n_filters=8, latent_channels=2, n_epochs=5, random_state=42)
+    conv_ae.fit(images)
+    
+    # Reconstruct
+    reconstructed = conv_ae.reconstruct(images)
+    assert reconstructed.shape == (20, 32, 32)
+    
+    # Transform (latent)
+    latent = conv_ae.transform(images)
+    assert latent.shape[0] == 20
+    assert latent.shape[1] == 2  # latent_channels
+
+
+def test_conv_autoencoder_loss_decreases():
+    if not TORCH_AVAILABLE:
+        print("  Skipping (PyTorch not available)")
+        return
+    
+    images = np.random.rand(30, 32, 32).astype(np.float32)
+    conv_ae = ConvAutoencoder(n_filters=8, latent_channels=2, n_epochs=20, random_state=42)
+    conv_ae.fit(images)
+    
+    # Loss should decrease
+    assert conv_ae.loss_history_[-1] < conv_ae.loss_history_[0]
+
+
+def test_conv_autoencoder_filters():
+    if not TORCH_AVAILABLE:
+        print("  Skipping (PyTorch not available)")
+        return
+    
+    images = np.random.rand(20, 32, 32).astype(np.float32)
+    conv_ae = ConvAutoencoder(n_filters=16, latent_channels=4, n_epochs=5, random_state=42)
+    conv_ae.fit(images)
+    
+    filters = conv_ae.get_encoder_filters()
+    assert filters.shape[0] == 16  # n_filters
+    assert filters.shape[1] == 3   # kernel height
+    assert filters.shape[2] == 3   # kernel width
+
+
+def test_conv_autoencoder_unfitted_raises():
+    if not TORCH_AVAILABLE:
+        print("  Skipping (PyTorch not available)")
+        return
+    
+    conv_ae = ConvAutoencoder(n_filters=8, latent_channels=2)
+    try:
+        conv_ae.transform(np.random.rand(10, 32, 32).astype(np.float32))
+        assert False, "Should have raised"
+    except RuntimeError:
+        pass
+
+
 if __name__ == "__main__":
     test_reconstruction_shape()
     test_orthogonality()
@@ -231,4 +293,12 @@ if __name__ == "__main__":
     test_autoencoder_reconstruction()
     test_autoencoder_centering()
     test_autoencoder_unfitted_raises()
+    
+    # Conv Autoencoder tests
+    print("Running ConvAutoencoder tests...")
+    test_conv_autoencoder_shapes()
+    test_conv_autoencoder_loss_decreases()
+    test_conv_autoencoder_filters()
+    test_conv_autoencoder_unfitted_raises()
+    
     print("All tests passed!")
