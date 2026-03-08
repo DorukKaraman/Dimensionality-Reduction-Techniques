@@ -1,45 +1,21 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from svd import TruncatedSVD, PCA
-from autoencoder import LinearAutoencoder, ConvAutoencoder
-from metrics import psnr, relative_error
+import sys
+sys.path.insert(0, '..')
 
-
-def create_synthetic_dataset(n_samples=100, size=32):
-    # Create synthetic face-like images
-    images = []
-    rng = np.random.default_rng(42)
-    
-    for _ in range(n_samples):
-        img = np.ones((size, size)) * 0.8
-        
-        eye_y = size // 3 + rng.integers(-2, 3)
-        eye_size = 2 + rng.integers(0, 2)
-        mouth_y = 2 * size // 3 + rng.integers(-2, 3)
-        
-        # Eyes
-        left_x = size // 3 + rng.integers(-2, 3)
-        right_x = 2 * size // 3 + rng.integers(-2, 3)
-        img[eye_y-eye_size:eye_y+eye_size, left_x-eye_size:left_x+eye_size] = 0.2
-        img[eye_y-eye_size:eye_y+eye_size, right_x-eye_size:right_x+eye_size] = 0.2
-        
-        # Mouth
-        mouth_width = size // 4 + rng.integers(-2, 3)
-        img[mouth_y:mouth_y+2, size//2-mouth_width:size//2+mouth_width] = 0.3
-        
-        img += rng.normal(0, 0.05, (size, size))
-        images.append(np.clip(img, 0, 1))
-    
-    return np.array(images)
+from src.svd import TruncatedSVD, PCA
+from src.autoencoder import LinearAutoencoder, ConvAutoencoder
+from src.metrics import psnr, relative_error
+from data.synthetic import create_synthetic_faces, images_to_matrix
 
 
 def main():
     print("Creating synthetic dataset...")
-    images = create_synthetic_dataset(n_samples=100, size=32)
+    images = create_synthetic_faces(n_samples=100, size=32)
     image_shape = (32, 32)
     
     # Flatten to matrix (each row = one image)
-    X = images.reshape(len(images), -1)
+    X = images_to_matrix(images)
     print(f"Dataset: {X.shape[0]} images, {X.shape[1]} pixels each")
     
     n_components = 10
@@ -136,8 +112,8 @@ def main():
     
     plt.tight_layout()
     plt.subplots_adjust(left=0.12)  # Make room for row labels
-    plt.savefig("comparison_all_methods.png", dpi=150)
-    print("\nSaved: comparison_all_methods.png")
+    plt.savefig("../images/comparison_all_methods.png", dpi=150)
+    print("\nSaved: ../images/comparison_all_methods.png")
     plt.show()
     
     # Print summary

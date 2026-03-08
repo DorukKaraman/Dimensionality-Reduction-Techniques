@@ -6,12 +6,16 @@ SVD, PCA, and Autoencoder implementations for image compression and dimensionali
 
 ```bash
 pip install -r requirements.txt
-python tests.py
+
+# Run tests
+cd tests && python test_linear.py && python test_autoencoder.py && python test_metrics.py
 ```
 
 ## Demos
 
 ```bash
+cd demos
+
 # SVD compression on single image
 python visualize_compression.py
 
@@ -31,15 +35,27 @@ python compare_methods.py
 ## Project Structure
 
 ```
-├── svd.py                     # TruncatedSVD and PCA classes
-├── autoencoder.py             # LinearAutoencoder (NumPy) + ConvAutoencoder (PyTorch)
-├── metrics.py                 # Reconstruction error, PSNR metrics
-├── visualize_compression.py   # SVD demo on single image
-├── visualize_pca.py           # PCA demo on synthetic faces
-├── visualize_linear_ae.py     # Linear Autoencoder demo + weights
-├── visualize_conv_ae.py       # Conv Autoencoder demo + filters
-├── compare_methods.py         # PCA vs Linear AE vs Conv AE comparison
-├── tests.py                   # Unit tests (23 tests)
+├── data/
+│   ├── __init__.py
+│   └── synthetic.py           # Synthetic face/image generation
+├── demos/
+│   ├── visualize_compression.py   # SVD demo on single image
+│   ├── visualize_pca.py           # PCA demo on synthetic faces
+│   ├── visualize_linear_ae.py     # Linear Autoencoder demo + weights
+│   ├── visualize_conv_ae.py       # Conv Autoencoder demo + filters
+│   └── compare_methods.py         # PCA vs Linear AE vs Conv AE comparison
+├── images/                    # Output visualizations
+├── notebooks/                 # Jupyter notebooks (coming soon)
+├── src/
+│   ├── __init__.py
+│   ├── svd.py                 # TruncatedSVD and PCA classes
+│   ├── autoencoder.py         # LinearAutoencoder (NumPy) + ConvAutoencoder (PyTorch)
+│   └── metrics.py             # Reconstruction error, PSNR metrics
+├── tests/
+│   ├── __init__.py
+│   ├── test_linear.py         # Tests for SVD and PCA
+│   ├── test_autoencoder.py    # Tests for Linear and Conv Autoencoders
+│   └── test_metrics.py        # Tests for metrics
 ├── requirements.txt
 └── README.md
 ```
@@ -47,9 +63,10 @@ python compare_methods.py
 ## Usage
 
 ```python
-from svd import TruncatedSVD, PCA, compress_image
-from autoencoder import LinearAutoencoder
-from metrics import psnr, relative_error
+from src.svd import TruncatedSVD, PCA, compress_image
+from src.autoencoder import LinearAutoencoder, ConvAutoencoder
+from src.metrics import psnr, relative_error
+from data.synthetic import create_synthetic_faces, images_to_matrix
 import numpy as np
 
 # SVD: Compress a single image
@@ -59,7 +76,8 @@ print(f"PSNR: {psnr(image, compressed):.1f} dB")
 
 # PCA: Reduce dimensionality of a dataset
 # X shape: (n_samples, n_features) - each row is a flattened image
-X = np.random.randn(100, 1024)  # 100 images, 32x32 pixels
+images = create_synthetic_faces(n_samples=100, size=32)
+X = images_to_matrix(images)  # Flatten to (100, 1024)
 
 pca = PCA(n_components=50)
 X_reduced = pca.fit_transform(X)
@@ -67,16 +85,14 @@ print(f"Variance retained: {pca.explained_variance_ratio_.sum():.2%}")
 
 X_reconstructed = pca.inverse_transform(X_reduced)
 
-# Autoencoder: Neural network approach
+# Linear Autoencoder: Neural network approach
 linear_ae = LinearAutoencoder(n_components=50, learning_rate=0.1, n_iterations=500)
 linear_ae.fit(X)
 X_linear = linear_ae.reconstruct(X)
 
 # Convolutional Autoencoder (PyTorch)
-images = np.random.rand(100, 32, 32).astype(np.float32)  # (N, H, W)
-from autoencoder import ConvAutoencoder
 conv_ae = ConvAutoencoder(n_filters=16, latent_channels=4, n_epochs=50)
-conv_ae.fit(images)
+conv_ae.fit(images)  # Takes (N, H, W) directly
 images_reconstructed = conv_ae.reconstruct(images)
 ```
 
@@ -151,7 +167,7 @@ images_reconstructed = conv_ae.reconstruct(images)
 - [ ] Image utilities for loading, flattening and reshaping
 - [ ] Jupyter notebook examples
 - [ ] More datasets (e.g. MNIST, CIFAR-10)
-- [ ] Refactoring code (structuring images etc and generating synthetic data organization)
+
 ## License
 
 MIT
