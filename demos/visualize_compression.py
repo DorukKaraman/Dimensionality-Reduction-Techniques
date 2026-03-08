@@ -1,32 +1,11 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import sys
+sys.path.insert(0, '..')
 
-from svd import TruncatedSVD
-from metrics import relative_error, psnr
-
-
-def create_sample_image(size=512):
-    # Checkerboard with shapes
-    image = np.zeros((size, size))
-    
-    # Checkerboard pattern
-    block = size // 8
-    for i in range(8):
-        for j in range(8):
-            if (i + j) % 2 == 0:
-                image[i*block:(i+1)*block, j*block:(j+1)*block] = 255
-    
-    # Circle
-    y, x = np.ogrid[:size, :size]
-    center = size // 2
-    mask = (x - center)**2 + (y - center)**2 < (size // 4)**2
-    image[mask] = 128
-    
-    # Diagonal lines
-    for i in range(0, size, 16):
-        np.fill_diagonal(image[i:], 200)
-    
-    return image
+from src.svd import TruncatedSVD
+from src.metrics import relative_error, psnr
+from data.synthetic import create_sample_image
 
 
 def visualize_compression(image, ranks):
@@ -54,9 +33,9 @@ def visualize_compression(image, ranks):
         print(f"Rank {k:3d}: PSNR={psnr_val:5.1f} dB, RelErr={rel_err:5.1f}%, VarExpl={var_explained:5.1f}%")
     
     plt.tight_layout()
-    plt.savefig('svd_compression_demo.png', dpi=150)
+    plt.savefig('../images/svd_compression_demo.png', dpi=150)
     plt.show()
-    print("\nSaved to svd_compression_demo.png")
+    print("\nSaved to ../images/svd_compression_demo.png")
 
 
 def main():

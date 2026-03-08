@@ -1,57 +1,11 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from svd import PCA
-from metrics import psnr, relative_error
+import sys
+sys.path.insert(0, '..')
 
-
-def create_synthetic_faces(n_samples=50, size=32):
-    """
-    Create synthetic 'face-like' images with eyes and mouth patterns.
-    
-    Returns:
-        Array of shape (n_samples, size, size)
-    """
-    images = []
-    rng = np.random.default_rng(42)
-    
-    for _ in range(n_samples):
-        img = np.ones((size, size)) * 0.8  # light background
-        
-        # Random variations
-        eye_y = size // 3 + rng.integers(-2, 3)
-        eye_size = 2 + rng.integers(0, 2)
-        mouth_y = 2 * size // 3 + rng.integers(-2, 3)
-        
-        # Left eye
-        left_x = size // 3 + rng.integers(-2, 3)
-        img[eye_y-eye_size:eye_y+eye_size, left_x-eye_size:left_x+eye_size] = 0.2
-        
-        # Right eye
-        right_x = 2 * size // 3 + rng.integers(-2, 3)
-        img[eye_y-eye_size:eye_y+eye_size, right_x-eye_size:right_x+eye_size] = 0.2
-        
-        # Mouth
-        mouth_width = size // 4 + rng.integers(-2, 3)
-        img[mouth_y:mouth_y+2, size//2-mouth_width:size//2+mouth_width] = 0.3
-        
-        # Add noise
-        img += rng.normal(0, 0.05, (size, size))
-        img = np.clip(img, 0, 1)
-        
-        images.append(img)
-    
-    return np.array(images)
-
-
-def images_to_matrix(images):
-    """Flatten images to row vectors."""
-    n_samples = images.shape[0]
-    return images.reshape(n_samples, -1)
-
-
-def matrix_to_images(matrix, image_shape):
-    """Reshape row vectors back to images."""
-    return matrix.reshape(-1, *image_shape)
+from src.svd import PCA
+from src.metrics import psnr, relative_error
+from data.synthetic import create_synthetic_faces, images_to_matrix, matrix_to_images
 
 
 def main():
@@ -103,8 +57,8 @@ def main():
     axes[1, 0].set_ylabel("Reconstructed", fontsize=10, fontweight='bold')
     
     plt.tight_layout()
-    plt.savefig("pca_reconstruction.png", dpi=150)
-    print("\nSaved: pca_reconstruction.png")
+    plt.savefig("../images/pca_reconstruction.png", dpi=150)
+    print("\nSaved: ../images/pca_reconstruction.png")
     plt.show()
     
     # Second figure: Principal Components
@@ -118,8 +72,8 @@ def main():
         axes2[i].axis('off')
     
     plt.tight_layout()
-    plt.savefig("pca_components.png", dpi=150)
-    print("Saved: pca_components.png")
+    plt.savefig("../images/pca_components.png", dpi=150)
+    print("Saved: ../images/pca_components.png")
     plt.show()
 
 
