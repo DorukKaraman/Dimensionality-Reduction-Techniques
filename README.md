@@ -165,7 +165,7 @@ images_reconstructed = conv_ae.reconstruct(images)
 - [x] Convolutional Autoencoder (PyTorch)
 - [x] Method comparison visualization
 - [ ] Image utilities for loading, flattening and reshaping
-- [x] Jupyter notebook examples (1/3 done)
+- [x] Jupyter notebook examples (2/3 done)
 - [ ] More datasets (e.g. MNIST, CIFAR-10)
 
 ## License
